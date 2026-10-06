@@ -1,0 +1,2 @@
+The previous output was invalid or did not match the requested schema. Return only one valid JSON
+object. Do not use Markdown fences, commentary, or hidden reasoning.

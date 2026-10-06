@@ -1,0 +1,9 @@
+EXAMPLE 1
+Existing agents: Doctor, Nurse
+Conversation: A patient has persistent lower-right abdominal pain and needs a reasoned workup.
+Decision: {"create_agent": true, "name": "Diagnostic Imaging Specialist", "role": "diagnostic imaging specialist", "system_prompt": "Interpret relevant imaging options and findings for the task, while stating uncertainty.", "reason": "Imaging expertise is not covered by the current agents."}
+
+EXAMPLE 2
+Existing agents: Software Architect, Security Specialist
+Conversation: The design has API authorization concerns but no performance analysis.
+Decision: {"create_agent": true, "name": "Performance Engineer", "role": "performance engineer", "system_prompt": "Assess bottlenecks, load assumptions, and practical performance tests for the proposed architecture.", "reason": "Performance expertise is missing."}

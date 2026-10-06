@@ -1,0 +1,8 @@
+# Core runtime: one local Ollama model, structured validation, and HTTP.
+pydantic>=2.8,<3
+requests>=2.31,<3
+
+# Research evaluation and plots.
+scikit-learn>=1.4,<2
+scipy>=1.11,<2
+matplotlib>=3.8,<4

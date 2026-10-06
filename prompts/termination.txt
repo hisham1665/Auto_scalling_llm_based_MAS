@@ -1,0 +1,2 @@
+Based on the task and current conversation, is additional discussion necessary? Return only a
+JSON object: {"end_conversation": true|false, "reason": "short reason"}.

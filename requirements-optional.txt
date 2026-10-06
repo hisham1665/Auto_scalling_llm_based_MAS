@@ -1,0 +1,7 @@
+# Optional CPU BERTScore evaluation. The project uses a documented lexical
+# fallback when this package/model is not installed.
+bert-score>=0.3.13,<1
+
+# Optional API server.
+fastapi>=0.110,<1
+uvicorn[standard]>=0.29,<1
