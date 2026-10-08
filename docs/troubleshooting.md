@@ -7,23 +7,21 @@ Run these commands in order:
 ```bash
 python --version
 python main.py --help
-ollama --version
-ollama list
-curl http://localhost:11434/api/tags
 python main.py list-agents --scenario medical
 python -m pytest -q
 ```
 
-If all commands except the last model-dependent command work, the Python project is installed correctly and the remaining issue is Ollama/model availability.
+If these commands work, the Python project is installed correctly. A real `demo` additionally requires at least one configured cloud API key and network access.
 
 ## Provider errors
 
 | Error | Cause | Fix |
 |---|---|---|
-| `Ollama is not reachable at ...` | Ollama is stopped or the URL is wrong | Start Ollama and check `OLLAMA_BASE_URL` |
-| `Model ... is not installed` | The configured tag is absent | Run `ollama pull <tag>` or update `OLLAMA_MODEL` |
-| Request timeout | Model generation is slower than the configured timeout | Increase `OLLAMA_TIMEOUT` or reduce response/context limits |
-| Repeated retries | Temporary HTTP/provider failure | Inspect Ollama logs and reduce `OLLAMA_RETRIES` while debugging |
+| `Configure NVIDIA_API_KEY and/or GROQ_API_KEY` | Neither cloud provider is configured | Add at least one key to the local `.env` file |
+| `NVIDIA request failed ... switching to Groq fallback` | NVIDIA rate limit, token limit, auth, endpoint, timeout, or other provider error | Check NVIDIA account/model settings; the current run continues through Groq when its key is configured |
+| Both provider requests fail | The primary and fallback providers both rejected the request | Check status details in the terminal/result `errors`, account quotas, model names, and endpoint URLs |
+| Request timeout | Provider response exceeded the configured timeout | Increase `NVIDIA_TIMEOUT`/`GROQ_TIMEOUT`, or reduce response/context limits |
+| Repeated retries | Temporary HTTP/provider failure | Inspect provider status/quota and adjust `NVIDIA_RETRIES`/`GROQ_RETRIES` |
 
 ## Resource errors
 
@@ -37,7 +35,7 @@ MAX_RESPONSE_TOKENS=256
 CONTEXT_MAX_CHARS=8000
 ```
 
-The application deliberately uses one model provider and synchronous calls. It does not start one model instance per agent.
+The application deliberately uses one shared cloud client and synchronous calls. It does not start one provider session per agent.
 
 ## Prompt/output errors
 
@@ -54,12 +52,12 @@ termination_reason
 
 Do not remove validation to make a run appear successful; malformed decisions should remain observable.
 
-## No Ollama in the development sandbox
+## No cloud access in the development sandbox
 
-This repository can be compiled and tested without Ollama:
+This repository can be compiled and tested without cloud access:
 
 ```bash
 python -m pytest -q
 ```
 
-The real demo intentionally fails with a clear connectivity error if Ollama is absent. It does not silently switch to a fake model.
+The real demo fails with a clear configuration/provider error if no cloud key is available. It does not silently switch to a fake or local model.

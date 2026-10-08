@@ -1,6 +1,6 @@
-# Installation and local setup guide
+# Installation and cloud setup guide
 
-This guide explains how to install and run the IAAG/DRTAG research engine on a laptop using one local Ollama model. The project does not require OpenAI, Anthropic, Google, or any other cloud API.
+This guide explains how to install and run the IAAG/DRTAG research engine with cloud chat models. The production runtime uses NVIDIA NIM/Nemotron first and Groq/Qwen as automatic failover. It does not use Ollama or a local model.
 
 ## 1. System requirements
 
@@ -9,13 +9,12 @@ This guide explains how to install and run the IAAG/DRTAG research engine on a l
 - Linux, macOS, or Windows 10/11.
 - Python 3.10 or newer. Python 3.11 or 3.12 is recommended.
 - Git.
-- Ollama installed and running for real demonstrations.
-- Enough disk space for the selected Ollama model and its runtime cache.
-- A machine capable of running the configured Spark model. Ollama model memory requirements depend on the model tag and quantization.
+- An NVIDIA API key for the primary provider and/or a Groq API key for fallback.
+- Network access to the configured provider endpoints.
 
 ### Not required for unit tests
 
-Ollama and the model are not required to run the automated tests. Tests inject a deterministic mock provider and never pretend that the mock is the production runtime.
+Cloud keys and network access are not required to run the automated tests. Tests inject a deterministic mock provider and use fake HTTP transports for cloud-client behavior.
 
 ## 2. Get the project
 
@@ -94,58 +93,7 @@ python main.py list-agents --scenario medical
 
 Expected behavior is a CLI help screen, successful compilation, and a list containing Doctor, Nurse, Radiologist, Surgeon, and Gastroenterologist for the medical static scenario.
 
-## 6. Install and start Ollama
-
-Install Ollama from the official download page:
-
-<https://ollama.com/download>
-
-The exact installation process is maintained by Ollama and differs between operating systems.
-
-### Linux
-
-After installing Ollama, start the service in one terminal:
-
-```bash
-ollama serve
-```
-
-Keep that terminal running. On systems configured with the Ollama service, the service may already be running.
-
-### macOS and Windows
-
-Start the Ollama desktop application. If the `ollama` command is available in a terminal, the same commands below can be used to check the installation.
-
-Verify the client is available:
-
-```bash
-ollama --version
-```
-
-## 7. Install the Spark model
-
-The default project setting is:
-
-```dotenv
-OLLAMA_MODEL=spark-x2.5-4b
-```
-
-Pull that model:
-
-```bash
-ollama pull spark-x2.5-4b
-ollama list
-```
-
-Perform a direct model smoke test before using the project:
-
-```bash
-ollama run spark-x2.5-4b "Reply with one short sentence confirming that the local model is available."
-```
-
-If your Ollama installation uses a different model tag, use the exact name shown by `ollama list` and update `OLLAMA_MODEL` accordingly. The code does not hard-code the model beyond the default configuration.
-
-## 8. Configure the project
+## 6. Configure cloud providers
 
 Copy the template:
 
@@ -159,13 +107,20 @@ On Windows PowerShell:
 Copy-Item .env.example .env
 ```
 
-The most important settings are:
+Fill in the provider keys without putting them in source files or command history. `.env` is ignored by Git:
 
 ```dotenv
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=spark-x2.5-4b
-OLLAMA_TIMEOUT=120
-OLLAMA_RETRIES=1
+NVIDIA_API_KEY=your_nvidia_api_key
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+NVIDIA_MODEL=nvidia/llama-3.3-nemotron-super-49b-v1.5
+NVIDIA_TIMEOUT=90
+NVIDIA_RETRIES=0
+GROQ_API_KEY=your_groq_api_key
+GROQ_BASE_URL=https://api.groq.com/openai/v1
+GROQ_MODEL=qwen/qwen3-32b
+GROQ_TIMEOUT=90
+GROQ_RETRIES=0
+CLOUD_REASONING_FORMAT=hidden
 MAX_TURNS=10
 MAX_AGENTS=8
 MAX_AGENT_GENERATIONS_PER_RUN=4
@@ -174,9 +129,17 @@ RANDOM_SEED=42
 RUNS_PER_CONFIGURATION=1
 ```
 
-### Laptop-friendly starting configuration
+NVIDIA is attempted first whenever `NVIDIA_API_KEY` is configured. If its request fails because of a quota/rate limit, token limit, authentication problem, endpoint problem, timeout, or another provider error, the client switches to Groq and continues the run with `GROQ_MODEL`. If only one key is present, that provider is used directly. At least one key is required for a real run.
 
-For a machine with limited memory or slow inference, begin with:
+The model names can be changed to models enabled for your accounts. The default NVIDIA model is Nemotron and the default Groq model is Qwen 3 32B.
+
+Existing `.env` files may also use `Nvidia`/`Nmodel` and `Groq`/`GModel` for the corresponding API keys/model names. The standard uppercase variable names take precedence when both are present.
+
+`CLOUD_REASONING_FORMAT=hidden` keeps internal reasoning out of returned text and reduces the chance that structured JSON responses consume the output budget. For Nemotron 3.5 Lightning this sends NVIDIA's `chat_template_kwargs={"enable_thinking": false}` option; for older Nemotron variants it adds `/no_think`; for Groq Qwen it sends Groq's `reasoning_format=hidden` option.
+
+### Request-friendly starting configuration
+
+For a first cloud run, begin with:
 
 ```dotenv
 MAX_TURNS=4
@@ -188,11 +151,9 @@ RUNS_PER_CONFIGURATION=1
 LLM_TEMPERATURE=0.1
 ```
 
-Increase these values gradually after the single demo completes successfully.
+These limits reduce request size and cloud quota consumption. Increase them gradually after the single demo completes successfully.
 
-## 9. Run the first real demo
-
-Make sure Ollama is running and the model is installed, then execute:
+## 7. Run the first real demo
 
 ```bash
 python main.py demo
@@ -216,7 +177,7 @@ EXPERIMENT_COMPLETE
 
 The generated name is model-dependent. Do not expect the model to always choose the same specialist.
 
-## 10. Run individual configurations
+## 8. Run individual configurations
 
 ```bash
 python main.py run --approach static --selection llm --scenario medical
@@ -249,7 +210,7 @@ software_architecture
 
 The medical scenario is synthetic and educational. It must not be used for diagnosis or treatment decisions.
 
-## 11. Run all nine configurations
+## 9. Run all nine configurations
 
 Start with one run per configuration:
 
@@ -269,9 +230,9 @@ For a larger study:
 RUNS_PER_CONFIGURATION=10 python main.py experiment --all --scenario medical
 ```
 
-Use one run first. Local LLM inference can make 10 repetitions expensive.
+Use one run first. Ten repetitions can consume substantial cloud quota.
 
-## 12. Inspect and evaluate results
+## 10. Inspect and evaluate results
 
 Results are saved as non-overwriting JSON documents:
 
@@ -301,9 +262,9 @@ Plots are written to:
 results/plots/
 ```
 
-Each result contains the model name, configuration, scenario, approach, selection strategy, random seed, initial agents, generated agents, final agents, full conversation, event timeline, token information when provided by Ollama, termination reason, execution duration, errors, retries, and metrics.
+Each result contains the active provider/model configuration, scenario, approach, selection strategy, random seed, initial agents, generated agents, final agents, full conversation, event timeline, token information when provided by the cloud API, termination reason, execution duration, errors, retries, and metrics.
 
-## 13. Run tests without Ollama
+## 11. Run tests without cloud calls
 
 ```bash
 python -m pytest -q
@@ -319,12 +280,12 @@ The tests verify:
 - IAAG generation before the first turn.
 - DRTAG generation during a conversation.
 - Generated-agent registration and participation.
-- Ollama request construction with a fake HTTP transport.
+- Cloud request construction and NVIDIA-to-Groq failover with fake HTTP transports.
 - Result saving and evaluation.
 
-The test mock is test-only. The production `main.py demo` command always uses Ollama.
+The test mock is test-only. The production `main.py demo` command always uses the NVIDIA-first cloud client.
 
-## 14. Run the optional API
+## 12. Run the optional API
 
 Install optional dependencies:
 
@@ -354,39 +315,22 @@ curl -X POST http://127.0.0.1:8000/run \
 
 On Windows PowerShell, use `Invoke-RestMethod` or a REST client if the multiline `curl` syntax is inconvenient.
 
-## 15. Troubleshooting
+## 13. Troubleshooting
 
-### `Ollama is not reachable at http://localhost:11434`
+### `Configure NVIDIA_API_KEY and/or GROQ_API_KEY`
 
-Start Ollama:
+Add at least one cloud provider key to `.env`. With both keys present, NVIDIA is tried first and Groq is used after an NVIDIA failure.
 
-```bash
-ollama serve
+### NVIDIA or Groq returns a model/endpoint error
+
+Confirm that the model is enabled for the corresponding account and that the base URL includes `/v1`:
+
+```dotenv
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+GROQ_BASE_URL=https://api.groq.com/openai/v1
 ```
 
-Then verify:
-
-```bash
-curl http://localhost:11434/api/tags
-```
-
-If Ollama is running on another host or port, set `OLLAMA_BASE_URL` in `.env`.
-
-### `Model 'spark-x2.5-4b' is not installed`
-
-Check installed models:
-
-```bash
-ollama list
-```
-
-Then either install the configured model:
-
-```bash
-ollama pull spark-x2.5-4b
-```
-
-or update `.env` to the exact installed model tag.
+The application sends `POST /chat/completions` to those base URLs. It does not send requests to Ollama.
 
 ### The model response is malformed JSON
 
@@ -401,7 +345,7 @@ The editable correction prompt is `prompts/correction.txt`.
 
 ### The run is too slow
 
-Reduce local work:
+Reduce request size and cloud quota usage:
 
 ```dotenv
 MAX_TURNS=4
@@ -410,7 +354,7 @@ CONTEXT_MAX_CHARS=8000
 MAX_AGENT_GENERATIONS_PER_RUN=2
 ```
 
-Run evaluation after generation instead of enabling neural BERTScore during the run. The project makes no concurrent model calls; all agents share one local provider.
+Run evaluation after generation instead of enabling neural BERTScore during the run. The project makes no concurrent model calls; all agents share one cloud client.
 
 ### The run stops at the turn limit
 
@@ -433,7 +377,7 @@ Install the optional requirements:
 python -m pip install -r requirements-optional.txt
 ```
 
-## 16. Prompt customization
+## 14. Prompt customization
 
 Prompt files are loaded from `PROMPTS_DIR` and can be edited without modifying Python code:
 
@@ -448,6 +392,6 @@ prompts/correction.txt
 
 Keep the JSON response shapes unchanged when modifying prompts. The parser and Pydantic models are intentionally strict so experiments do not silently accept invalid manager decisions.
 
-## 17. Important research interpretation
+## 15. Important research interpretation
 
-This project is a local, resource-efficient reproduction of the core IAAG and DRTAG methodology. It uses Spark-X2.5-4B through Ollama rather than the GPT-4o setup used in the original paper. Results should be used to inspect architecture behavior and local experimental trends, not presented as exact numerical replication of the paper.
+This project is a cloud-backed, resource-efficient reproduction of the core IAAG and DRTAG methodology. It uses configurable NVIDIA Nemotron and Groq Qwen models rather than the GPT-4o setup used in the original paper. Results should be used to inspect architecture behavior and provider/model trends, not presented as exact numerical replication of the paper.

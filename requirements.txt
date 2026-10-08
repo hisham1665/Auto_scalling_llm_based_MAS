@@ -1,4 +1,4 @@
-# Core runtime: one local Ollama model, structured validation, and HTTP.
+# Core runtime: cloud chat providers, structured validation, and HTTP.
 pydantic>=2.8,<3
 requests>=2.31,<3
 

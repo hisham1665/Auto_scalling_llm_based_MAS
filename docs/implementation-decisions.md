@@ -10,7 +10,7 @@
 
 ## B. Engineering implementation decisions
 
-- A single synchronous `OllamaLLM` instance is shared by all agents to fit laptop memory.
+- A single synchronous `CloudFailoverLLM` instance is shared by all agents. NVIDIA NIM/Nemotron is primary and Groq/Qwen is the fallback for rate limits, token limits, authentication failures, endpoint failures, and other provider errors.
 - Pydantic models validate generation, selection, and termination outputs.
 - The manager forces a newly generated DRTAG agent to receive one contribution before normal termination. This makes the integration invariant testable and prevents a valid new role from being generated and immediately ignored.
 - Agents are unique by normalized name and role. Registry insertion order defines round-robin order.

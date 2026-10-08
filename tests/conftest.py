@@ -7,7 +7,7 @@ from manager.agent_generator import AgentSpec, SelectionDecision, TerminationDec
 
 
 class MockLLM(BaseLLM):
-    """Deterministic provider used only in tests; runtime remains Ollama-only."""
+    """Deterministic provider used only in tests; runtime uses cloud providers."""
 
     def __init__(self, *, create_on_generation: bool = True) -> None:
         self.model = "mock-model"

@@ -19,7 +19,7 @@ from evaluation.evaluator import evaluate_conversation
 from experiments.configurations import all_configurations
 from experiments.scenarios import Scenario, get_scenario
 from llm.base_llm import BaseLLM
-from llm.ollama_client import OllamaLLM
+from llm.cloud_client import CloudFailoverLLM
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class ExperimentRunner:
     ) -> None:
         self.settings = settings or Settings.from_env()
         self.llm = llm
-        self.llm_factory = llm_factory or (lambda current: OllamaLLM(current))
+        self.llm_factory = llm_factory or (lambda current: CloudFailoverLLM(current))
         self.result_dir = Path(result_dir or self.settings.results_dir)
 
     def _provider(self) -> BaseLLM:
@@ -111,8 +111,9 @@ class ExperimentRunner:
                 "model": llm.model,
                 "model_name": llm.model,
                 "model_configuration": {
-                    "provider": "ollama",
+                    "provider": getattr(llm, "provider", "cloud"),
                     "base_url": getattr(llm, "base_url", None),
+                    "failover_reason": getattr(llm, "failover_reason", None),
                     "temperature": current_settings.temperature,
                     "max_response_tokens": current_settings.max_response_tokens,
                 },
@@ -143,8 +144,12 @@ class ExperimentRunner:
             payload = {
                 "experiment_id": experiment_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "model": getattr(llm, "model", current_settings.ollama_model),
-                "model_name": getattr(llm, "model", current_settings.ollama_model),
+                "model": getattr(llm, "model", current_settings.nvidia_model),
+                "model_name": getattr(llm, "model", current_settings.nvidia_model),
+                "model_configuration": {
+                    "provider": getattr(llm, "provider", "nvidia_then_groq"),
+                    "base_url": getattr(llm, "base_url", None),
+                },
                 "scenario": selected_scenario.name,
                 "approach": approach.lower(),
                 "selection_strategy": selection,

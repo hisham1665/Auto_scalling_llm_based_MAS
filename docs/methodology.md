@@ -16,4 +16,4 @@ Persona prompting is used in the generated role and standard agent instructions.
 
 ## Reproduction scope
 
-The original experiments used GPT-4o. This project uses a configurable local Ollama model, defaulting to Spark-X2.5-4B, and is therefore a resource-efficient implementation/reproduction of the core methodology rather than an exact numerical reproduction.
+The original experiments used GPT-4o. This project uses configurable cloud models, defaulting to NVIDIA Nemotron with Groq Qwen failover, and is therefore a resource-efficient implementation/reproduction of the core methodology rather than an exact numerical reproduction.

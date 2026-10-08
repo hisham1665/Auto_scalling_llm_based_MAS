@@ -22,7 +22,7 @@ def _configure_logging(settings: Settings) -> None:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="IAAG/DRTAG dynamic multi-agent research runner")
     sub = parser.add_subparsers(dest="command", required=True)
-    demo = sub.add_parser("demo", help="run the real Ollama DRTAG medical demonstration")
+    demo = sub.add_parser("demo", help="run the cloud NVIDIA-first DRTAG medical demonstration")
     demo.add_argument("--scenario", default="medical", choices=sorted(SCENARIOS))
     run = sub.add_parser("run", help="run one configuration")
     run.add_argument("--approach", choices=("static", "iaag", "drtag"), required=True)

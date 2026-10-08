@@ -9,7 +9,7 @@ Each completed result includes:
 - approach, selection strategy, scenario, task, and limits;
 - initial, generated, and final agents;
 - full structured conversation;
-- event timeline, token counts when Ollama supplies them, errors/retries;
+- event timeline, token counts when the cloud provider supplies them, errors/retries;
 - termination reason and execution duration;
 - evaluation metrics.
 
