@@ -186,10 +186,4 @@ tests/             Deterministic unit and integration tests
 - [Troubleshooting](docs/troubleshooting.md)
 - [Limitations](docs/limitations.md)
 
-## Resume-ready description
 
-Designed and implemented a resource-efficient Python reproduction of IAAG and DRTAG dynamic agent integration for cloud LLMs. Built a registry-controlled conversation manager with Pydantic-validated agent generation, LLM/round-robin/random selection, bounded context and termination guards, event-level observability, reproducible nine-configuration experiments, lexical/neural evaluation hooks, statistical comparison utilities, persistence, CLI/API interfaces, and tests proving that a specialist generated during DRTAG becomes an active participant.
-
-## Limitations
-
-See [docs/limitations.md](docs/limitations.md). In particular, cloud quotas and provider availability can affect runs, model decisions can be weaker or stochastic, this project does not reproduce exact numerical results, and the transparent fallback metrics are not equivalent to neural BERTScore.
